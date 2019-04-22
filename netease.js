@@ -16,14 +16,17 @@ async function init(){
   //browser = await puppeteer.launch();
   browser = await puppeteer.launch({headless:false});
   await getListPage();
+
+  //拿到全部列表,开始下载
+  console.log(songs);
 }
 
 async function getListPage(){
     var url = baseUrl + "1489703";
-    await openNewPage(url).then(page=>{
+    await openNewPage(url).then(async page=>{
         page.on('response', intercepter);
         page.on('console', consoleMsg);
-        page.evaluate(injectListpage);
+        await page.evaluate(injectListpage);
     })
     .catch(function(e){
         console.log(e);
@@ -36,13 +39,13 @@ async function intercepter(resp){
     if(url.indexOf("/weapi/song/enhance/player/url/v1")<0) return;
 
     await resp.json().then(jsonres =>{
-        console.log(jsonres);
+        //console.log(jsonres);
         if(typeof(song[1] == 'undefined')){
             song[1] = jsonres.data[0].url;
+            song[2] = jsonres.data[0].id;
             songs.push(song);
         }
         song = [];
-        console.log(songs);
     }).catch(e=>{
         console.log('err json');
     })
@@ -50,8 +53,8 @@ async function intercepter(resp){
 //拦截console请求 为了与页内通信
 function consoleMsg(msg){
     if(msg.text().indexOf("songmenu:")<0) return;
-    //console.log(msg.text());
     song[0] = msg.text();
+    console.log("get one song:..."+song[0]);
 }
 //注入到列表页内的方法
 //遍历列表 & 点击 &拿到下载地址
@@ -62,7 +65,6 @@ async function injectListpage(){
         if(trs[tr] == null || trs[tr] == undefined) continue;
         if(typeof(trs[tr].querySelector) != 'function') continue;
         var onesong = trs[tr].querySelector(".left>div>.ply");
-        console.log(onesong);
         var title = trs[tr].querySelector("b").getAttribute("title");
         console.log("songmenu:"+title);
 
@@ -70,9 +72,10 @@ async function injectListpage(){
             setTimeout(()=>{
                 onesong.click();
                 resolve();
-            }, 5000);//默认等待5s在下载下一首
+            }, 1000);//默认等待1s在下载下一首
         })
     }
+    return;
 }
 
 init();

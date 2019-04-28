@@ -90,6 +90,9 @@ function getCliParams() {
         console.log("usage: node netease.js 112233(albumid)");
         process.exit();
     }
+    if(typeof(options[3]) != 'undefined' && options[3].length>1){
+        resultFile = options[3];        
+    }
     return options[2];
 }
 

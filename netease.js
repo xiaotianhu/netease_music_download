@@ -1,7 +1,9 @@
 const puppeteer = require('puppeteer');
 const fs = require('fs');
+resultFile = "/tmp/netease"
 browser = null;
 baseUrl = "https://music.163.com/#/album?id=";
+albumId = 0;
 song = [];
 songs = [];
 
@@ -13,16 +15,20 @@ async function openNewPage(url){
 }
 //抓取入口
 async function init(){
+  albumId = getCliParams();
   //browser = await puppeteer.launch();
   browser = await puppeteer.launch({headless:false});
   await getListPage();
 
   //拿到全部列表,开始下载
   console.log(songs);
+  var writeJson = JSON.stringify(songs);
+  fs.writeFileSync(resultFile, writeJson);
+  await browser.close();
 }
 
 async function getListPage(){
-    var url = baseUrl + "1489703";
+    var url = baseUrl + albumId;
     await openNewPage(url).then(async page=>{
         page.on('response', intercepter);
         page.on('console', consoleMsg);
@@ -35,7 +41,6 @@ async function getListPage(){
 //拦截请求 https://pptr.dev/#?product=Puppeteer&version=v1.14.0&show=api-class-response
 async function intercepter(resp){
     var url = resp.url();
-    //console.log(url);
     if(url.indexOf("/weapi/song/enhance/player/url/v1")<0) return;
 
     await resp.json().then(jsonres =>{
@@ -76,6 +81,16 @@ async function injectListpage(){
         })
     }
     return;
+}
+
+//从命令行获取参数
+function getCliParams() {
+    var options = process.argv;
+    if(typeof(options[2]) == 'undefined'){
+        console.log("usage: node netease.js 112233(albumid)");
+        process.exit();
+    }
+    return options[2];
 }
 
 init();

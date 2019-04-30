@@ -16,8 +16,8 @@ async function openNewPage(url){
 //抓取入口
 async function init(){
   albumId = getCliParams();
-  //browser = await puppeteer.launch();
-  browser = await puppeteer.launch({headless:false});
+  browser = await puppeteer.launch();
+  //browser = await puppeteer.launch({headless:false});
   await getListPage();
 
   //拿到全部列表,开始下载
@@ -47,7 +47,7 @@ async function intercepter(resp){
         //console.log(jsonres);
         if(typeof(song[1] == 'undefined')){
             song[1] = jsonres.data[0].url;
-            song[2] = jsonres.data[0].id;
+            //song[2] = jsonres.data[0].id;
             songs.push(song);
         }
         song = [];
@@ -57,9 +57,16 @@ async function intercepter(resp){
 }
 //拦截console请求 为了与页内通信
 function consoleMsg(msg){
-    if(msg.text().indexOf("songmenu:")<0) return;
-    song[0] = msg.text();
-    console.log("get one song:..."+song[0]);
+    console.log(msg.text());
+    if(msg.text().indexOf("songmenu:")>=0){
+        song[0] = msg.text().replace("songmenu:","");
+        console.log("get one song:..."+song[0]);
+    }
+    if(msg.text().indexOf("songid:")>=0){
+        song[2] = msg.text().replace("songid:","");
+        console.log("get one song id:..."+song[2]);
+    }
+
 }
 //注入到列表页内的方法
 //遍历列表 & 点击 &拿到下载地址
@@ -71,7 +78,9 @@ async function injectListpage(){
         if(typeof(trs[tr].querySelector) != 'function') continue;
         var onesong = trs[tr].querySelector(".left>div>.ply");
         var title = trs[tr].querySelector("b").getAttribute("title");
+        var songid = trs[tr].querySelector("a").getAttribute("href");
         console.log("songmenu:"+title);
+        console.log("songid:"+songid);
 
         await new Promise((resolve)=>{
             setTimeout(()=>{
